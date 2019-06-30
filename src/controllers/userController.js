@@ -53,7 +53,7 @@ module.exports = {
             user.password = await user.encryptPassword(body.password);
             await user.save();
 
-            res.status(200).json({
+            res.status(201).json({
                 success: true,
                 user
             });
@@ -69,8 +69,13 @@ module.exports = {
     updateUser: async (req, res, next) => {
         try {
             const { id } = req.params;
+            console.log('req.user', req.user);
+            const reqUser = req.user;
             /* Return a copy of the object, filtered to only have values for the whitelisted keys (or array of valid keys) */
-            const body = _.pick(req.body, ['name', 'role', 'img']);
+            let body = _.pick(req.body, ['name', 'img']);
+            if (reqUser.role === 'ADMIN_ROLE') {
+                _.pick(req.body, ['name', 'role', 'img', 'active']);
+            }
 
             const user = await User.findByIdAndUpdate(id, body, {
                 new: true,
@@ -88,22 +93,98 @@ module.exports = {
         }
     },
 
-    /* method DELETE: this method only sets to false active field */
+    /* method PUT: disable an user */
+    disable: async (req, res, next) => {
+        try {
+            const { id } = req.params;
+
+            const user = await User.findOne({ _id: id, active: true });
+            if (user) {
+                if (user.role === 'USER_ROLE' || req.user.role === 'ADMIN_ROLE') {
+                    user.active = false;
+                    await user.save();
+                    res.status(200).json({
+                        success: true,
+                        user
+                    });
+                } else {
+                    res.status(401).json({
+                        success: false,
+                        message: 'Solo puede desactivar cuentas de usuario'
+                    });
+                }
+            } else {
+                res.status(404).json({
+                    success: false,
+                    message: 'Usuario no encontrado'
+                });
+            }
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                error
+            });
+        }
+    },
+
+    /* method PUT: enable an user */
+    enable: async (req, res, next) => {
+        try {
+            const { id } = req.params;
+
+            const user = await User.findOne({ _id: id, active: false });
+            if (user) {
+                if (user.role === 'USER_ROLE' || req.user.role === 'ADMIN_ROLE') {
+                    user.active = true;
+                    await user.save();
+                    res.status(200).json({
+                        success: true,
+                        user
+                    });
+                } else {
+                    res.status(401).json({
+                        success: false,
+                        message: 'Solo puede activar cuentas de usuario'
+                    });
+                }
+            } else {
+                res.status(404).json({
+                    success: false,
+                    message: 'Usuario no encontrado'
+                });
+            }
+
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                error
+            });
+        }
+    },
+
+    /* method DELETE: delete an user */
     deleteUser: async (req, res, next) => {
         try {
             const { id } = req.params;
 
-            const user = await User.findOne({ _id:id , active:true});
+            const user = await User.findOne({ _id: id });
             if (user) {
-                user.active = false;
-                await user.save();
-                res.status(200).json({
-                    success: true,
-                    user
-                });
+                if (user.email === req.user.email) {
+                    res.status(400).json({
+                        success: false,
+                        message: 'No es posible eleminar su propio usuario'
+                    });
+                } else {
+                    
+                    await User.deleteOne({_id:id});
+                    res.status(200).json({
+                        success: true,
+                        message: 'Usuario eliminado correctamente'
+                    });
+                }
             } else {
                 res.status(404).json({
-                    success: true,
+                    success: false,
                     message: 'Usuario no encontrado'
                 });
             }

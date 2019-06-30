@@ -22,7 +22,6 @@ module.exports = {
                     });
                 } else {
                     const secretKey = process.env.SECRET_KEY;
-                    user.password ='.|.';
                     const token = jwt.sign(
                         { data: user },
                         secretKey,

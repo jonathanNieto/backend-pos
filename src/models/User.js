@@ -28,9 +28,17 @@ userSchema.methods.comparePassword = async function (password) {
     return await bcrypt.compare(password, this.password);
 }
 
+userSchema.methods.toJSON = function () {
+    const user = this;
+    let safeUser = user.toObject();
+    delete safeUser.password;
+    return safeUser;
+}
+
 userSchema.plugin(uniqueValidator, {
     type: 'mongoose-unique-validator',
-    message: 'Error, Se esperaba que {PATH} fuera un valor único(a). Ya existe ese valor.'
+    message: 'Error, Se esperaba que {PATH} fuera un valor único. Ya existe ese valor.'
 });
+
 
 module.exports = mongoose.model('User', userSchema);
