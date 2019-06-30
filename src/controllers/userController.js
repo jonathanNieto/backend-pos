@@ -74,7 +74,7 @@ module.exports = {
             /* Return a copy of the object, filtered to only have values for the whitelisted keys (or array of valid keys) */
             let body = _.pick(req.body, ['name', 'img']);
             if (reqUser.role === 'ADMIN_ROLE') {
-                _.pick(req.body, ['name', 'role', 'img', 'active']);
+                body =_.pick(req.body, ['name', 'role', 'img', 'active']);
             }
 
             const user = await User.findByIdAndUpdate(id, body, {
@@ -197,4 +197,4 @@ module.exports = {
     }
 }
 
-
+// TODO comprobar que se actualicen bien los campos en ambiente de produccion (heroku)
